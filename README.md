@@ -1,3 +1,96 @@
+
+## Ansible Runner image (Amazon Linux 2023)
+
+This document describes how to build the `ansible-runner` container image
+using the custom Ansible Builder image:
+
+- **Base image**: `vikaschenny/ansible-builder:amazonlinux2023`
+
+The result is a simple image suitable for testing that has `ansible-core`
+installed and a pre-created `/runner` environment.
+
+---
+
+### Dockerfile overview
+
+The `Dockerfile` in this directory contains:
+
+- `FROM vikaschenny/ansible-builder:amazonlinux2023`
+- `ARG WHEEL` (optional build argument; currently unused in the standard build)
+- Installs `python3-pip`
+- Installs `ansible-core` via `pip`
+- Creates the runner directories:
+  - `/runner/{env,inventory,project,artifacts}`
+  - `/home/runner/.ansible/tmp`
+- Sets permissions on `/runner` and `/home/runner`
+- Sets:
+  - `WORKDIR /runner`
+  - `ENV HOME=/home/runner`
+- Default command:
+  - `["ansible", "--version"]`
+
+---
+
+### Build locally
+
+From the `ansible-runner` directory (next to `Dockerfile`):
+
+```bash
+cd ansible-runner
+
+# Simple build (no wheel argument)
+docker build -f Dockerfile -t ansible-runner:latest .
+
+# Optionally, pass a wheel file if you want to copy it into the image
+docker build \
+  -f Dockerfile \
+  --build-arg WHEEL=dist/ansible_runner-<version>-py3-none-any.whl \
+  -t ansible-runner:latest .
+```
+
+This will:
+
+- Pull `vikaschenny/ansible-builder:amazonlinux2023`
+- Install `python3-pip` and `ansible-core`
+- Prepare `/runner` as the working directory
+
+---
+
+### Build on the MCP server
+
+On the MCP server (where the repo is cloned as `~/ansible-runner`
+and the base image is already present):
+
+```bash
+cd ~/ansible-runner
+docker build -f Dockerfile -t ansible-runner:latest .
+```
+
+Verify the image:
+
+```bash
+docker images ansible-runner:latest
+```
+
+You should see `ansible-runner:latest` with an Amazon Linux 2023–based
+stack via `vikaschenny/ansible-builder:amazonlinux2023`.
+
+---
+
+### Running the image
+
+To quickly verify the container:
+
+```bash
+docker run --rm ansible-runner:latest
+```
+
+You should see the `ansible --version` output printed from inside
+the container.
+
+
+
+########################### OLD ONE ##########################
 Ansible Runner
 ==============
 
